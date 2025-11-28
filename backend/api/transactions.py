@@ -1,9 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from backend.models.transactions import Transaction
 from backend.services.categorize import auto_category
 from backend.database.db import get_connection
 from datetime import datetime
-from typing import List  # <-- importe List
+from typing import List
 
 router = APIRouter()
 
@@ -35,7 +35,6 @@ def list_transactions():
     conn.close()
     return [dict(row) for row in result]
 
-# NOVO ENDPOINT PARA INSERIR VÁRIAS TRANSAÇÕES DE UMA VEZ
 @router.post("/batch")
 def add_transactions_batch(transactions: List[Transaction]):
     conn = get_connection()
@@ -55,3 +54,16 @@ def add_transactions_batch(transactions: List[Transaction]):
     conn.close()
 
     return {"status": "success", "inserted": inserted}
+
+# NOVO ENDPOINT PARA DELETAR TODAS AS TRANSAÇÕES
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_transactions():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM transactions")
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Todas as transações foram apagadas."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao apagar transações: {str(e)}")
